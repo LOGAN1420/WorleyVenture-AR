@@ -20,23 +20,39 @@
     font-size: 1.25em;
     color: white;
   }
+  
+  .debug-info {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 1000;
+  }
 </style>
 
 <body style="margin : 0px; overflow: hidden;">
   <!-- minimal loader shown until image descriptors are loaded -->
   <div class="arjs-loader">
-    <div>Loading, please wait...</div>
+    <div>Loading, please wait..</div>
+  </div>
+  
+  <div class="debug-info">
+    Status: Initializing...
   </div>
   <a-scene
     vr-mode-ui="enabled: false;"
     renderer="logarithmicDepthBuffer: true; precision: medium;"
     embedded
-    arjs="trackingMethod: best; sourceType: webcam;debugUIEnabled: false;"
+    arjs="trackingMethod: best; sourceType: webcam;debugUIEnabled: true;"
   >
-    <!-- we use cors proxy to avoid cross-origin problems ATTENTION! you need to set up your server -->
+    <!-- Using the existing marker files in the markers folder -->
     <a-nft
       type="nft"
-      url="./markers/business-card"
+      url="./markers/1"
       smooth="true"
       smoothCount="10"
       smoothTolerance=".01"
@@ -57,4 +73,53 @@
     </a-nft>
     <a-entity camera></a-entity>
   </a-scene>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const sceneEl = document.querySelector('a-scene');
+      const debugInfo = document.querySelector('.debug-info');
+      
+      // Update debug info
+      function updateStatus(message) {
+        console.log(message);
+        debugInfo.innerHTML = 'Status: ' + message;
+      }
+      
+      updateStatus('Initializing AR...');
+      
+      // Camera access events
+      sceneEl.addEventListener('camera-init', function() {
+        updateStatus('Camera initialized');
+      });
+      
+      sceneEl.addEventListener('camera-error', function(error) {
+        updateStatus('Camera error: ' + error);
+      });
+      
+      // NFT marker events
+      sceneEl.addEventListener('arjs-nft-loaded', function() {
+        updateStatus('NFT marker data loaded');
+        document.querySelector('.arjs-loader').style.display = 'none';
+      });
+      
+      // When marker is found
+      sceneEl.addEventListener('markerFound', function() {
+        updateStatus('Marker detected! ✓');
+      });
+      
+      // When marker is lost
+      sceneEl.addEventListener('markerLost', function() {
+        updateStatus('Marker lost. Please realign.');
+      });
+      
+      // Fallback to hide loader after timeout
+      setTimeout(() => {
+        const loader = document.querySelector('.arjs-loader');
+        if (loader && loader.style.display !== 'none') {
+          loader.style.display = 'none';
+          updateStatus('Timeout reached. Marker files may not be loading correctly.');
+        }
+      }, 8000);
+    });
+  </script>
 </body>
