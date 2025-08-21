@@ -111,15 +111,6 @@
       sceneEl.addEventListener('markerLost', function() {
         updateStatus('Marker lost. Please realign.');
       });
-      
-      // Fallback to hide loader after timeout
-      setTimeout(() => {
-        const loader = document.querySelector('.arjs-loader');
-        if (loader && loader.style.display !== 'none') {
-          loader.style.display = 'none';
-          updateStatus('Timeout reached. Marker files may not be loading correctly.');
-        }
-      }, 8000);
     });
   </script>
 </body>
