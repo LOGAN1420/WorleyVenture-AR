@@ -1,5 +1,13 @@
-<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.6.0/dist/aframe-master.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AR.js Business Card Demo</title>
+  <!-- Load A-Frame and AR.js libraries -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
 <style>
   .arjs-loader {
@@ -45,18 +53,18 @@
   </div>
   <a-scene
     vr-mode-ui="enabled: false;"
-    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    renderer="logarithmicDepthBuffer: true;"
     embedded
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    arjs="sourceType: webcam; debugUIEnabled: false;"
   >
     <!-- Using the existing marker files in the markers folder -->
     <a-nft
       type="nft"
-      url="./markers/1"
+      url="markers/1"
       smooth="true"
-      smoothCount="5"
+      smoothCount="10"
       smoothTolerance="0.01"
-      smoothThreshold="2"
+      smoothThreshold="5"
     >
       <a-entity id="business-card-content">
         <!-- Floating Business Info -->
@@ -75,7 +83,7 @@
   </a-scene>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    window.onload = function() {
       const sceneEl = document.querySelector('a-scene');
       const debugInfo = document.querySelector('.debug-info');
       let markerLoadingStarted = false;
@@ -91,16 +99,40 @@
       // Check if marker files exist
       function checkMarkerFiles() {
         updateStatus('Checking marker files...');
+        let filesChecked = 0;
+        let filesFound = 0;
+        const markerFiles = ['markers/1.fset', 'markers/1.fset3', 'markers/1.iset'];
         
-        // Create test image elements to verify marker files
-        const testImage = new Image();
-        testImage.onload = function() {
-          updateStatus('Marker file found!');
-        };
-        testImage.onerror = function() {
-          updateStatus('ERROR: Marker file not found or inaccessible');
-        };
-        testImage.src = './markers/1.fset';
+        markerFiles.forEach(file => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('HEAD', file, true);
+          xhr.onload = function() {
+            filesChecked++;
+            if (xhr.status === 200) {
+              filesFound++;
+              console.log(`File found: ${file}`);
+            } else {
+              console.log(`File not found: ${file} (status: ${xhr.status})`);
+            }
+            
+            if (filesChecked === markerFiles.length) {
+              if (filesFound === markerFiles.length) {
+                updateStatus(`All marker files found (${filesFound}/${markerFiles.length})`);
+              } else {
+                updateStatus(`ERROR: Only ${filesFound}/${markerFiles.length} marker files found`);
+              }
+            }
+          };
+          xhr.onerror = function() {
+            filesChecked++;
+            console.log(`Error checking file: ${file}`);
+            
+            if (filesChecked === markerFiles.length) {
+              updateStatus(`ERROR: Only ${filesFound}/${markerFiles.length} marker files found`);
+            }
+          };
+          xhr.send();
+        });
       }
       
       // Check marker files after a short delay
@@ -116,29 +148,24 @@
       });
       
       // NFT marker loading events
-      sceneEl.addEventListener('arjs-nft-init', function() {
+      document.addEventListener('artoolkitNFTCreated', function() {
         updateStatus('NFT marker loading started');
         markerLoadingStarted = true;
       });
       
-      sceneEl.addEventListener('arjs-nft-loading', function(event) {
-        if (event.detail && event.detail.progress) {
-          updateStatus('NFT marker loading: ' + Math.floor(event.detail.progress * 100) + '%');
-        }
-      });
-      
-      sceneEl.addEventListener('arjs-nft-loaded', function() {
+      // When NFT marker is loaded
+      document.addEventListener('arjs-nft-loaded', function(event) {
         updateStatus('NFT marker data loaded');
         document.querySelector('.arjs-loader').style.display = 'none';
       });
       
       // When marker is found
-      sceneEl.addEventListener('markerFound', function() {
+      document.addEventListener('markerFound', function() {
         updateStatus('Marker detected! ✓');
       });
       
       // When marker is lost
-      sceneEl.addEventListener('markerLost', function() {
+      document.addEventListener('markerLost', function() {
         updateStatus('Marker lost. Please realign.');
       });
       
@@ -146,6 +173,13 @@
       setTimeout(function() {
         if (!markerLoadingStarted) {
           updateStatus('WARNING: Marker loading process did not start');
+          // Try to manually trigger NFT loading
+          const nftMarker = document.querySelector('a-nft');
+          if (nftMarker) {
+            updateStatus('Attempting to manually initialize NFT marker...');
+            // Force a component update
+            nftMarker.setAttribute('url', 'markers/1');
+          }
         }
       }, 3000);
       
@@ -157,6 +191,6 @@
           updateStatus('Timeout reached. Marker files may not be loading correctly.');
         }
       }, 10000);
-    });
+    };
   </script>
 </body>
