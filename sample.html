@@ -1,0 +1,191 @@
+<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+
+<style>
+  .arjs-loader {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .arjs-loader div {
+    text-align: center;
+    font-size: 1.25em;
+    color: white;
+  }
+  
+  .debug-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 1000;
+    max-width: 80%;
+    overflow-wrap: break-word;
+  }
+</style>
+
+<body style="margin : 0px; overflow: hidden;">
+  <!-- minimal loader shown until image descriptors are loaded -->
+  <div class="arjs-loader">
+    <div>Loading, please wait...</div>
+  </div>
+  
+  <div class="debug-info">
+    Status: Initializing...
+  </div>
+  <a-scene
+    vr-mode-ui="enabled: false;"
+    renderer="logarithmicDepthBuffer: true;"
+    embedded
+    arjs="trackingMethod: best; sourceType: webcam;debugUIEnabled: false;"
+  >
+    <!-- we use cors proxy to avoid cross-origin problems -->
+
+    <!--
+      ⚠️⚠️⚠️
+      https://arjs-cors-proxy.herokuapp.com/ is now offline, Heroku has dismissed all his free plans from November 2022.
+      You need to host your own proxy and use it instead. The proxy is based on CORS Anywhere (see https://github.com/Rob--W/cors-anywhere).
+      ⚠️⚠️⚠️
+    -->
+
+    <a-nft
+      type="nft"
+      url="markers/1"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance=".01"
+      smoothThreshold="5"
+    >
+      <a-entity
+        position="0 0 0"
+      >
+        <!-- Simple text instead of 3D model -->
+        <a-text
+          value="Hello AR World!"
+          position="0 0 0"
+          scale="1 1 1"
+          color="blue"
+          align="center"
+        >
+      </a-entity>
+    </a-nft>
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    window.onload = function() {
+      const sceneEl = document.querySelector('a-scene');
+      const debugInfo = document.querySelector('.debug-info');
+      let markerLoadingStarted = false;
+      
+      // Update debug info
+      function updateStatus(message) {
+        console.log(message);
+        debugInfo.innerHTML = 'Status: ' + message;
+      }
+      
+      updateStatus('Initializing AR...');
+      
+      // Check if marker files exist
+      function checkMarkerFiles() {
+        updateStatus('Checking marker files...');
+        let filesChecked = 0;
+        let filesFound = 0;
+        const markerFiles = ['markers/1.fset', 'markers/1.fset3', 'markers/1.iset'];
+        
+        markerFiles.forEach(file => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('HEAD', file, true);
+          xhr.onload = function() {
+            filesChecked++;
+            if (xhr.status === 200) {
+              filesFound++;
+              console.log(`File found: ${file}`);
+            } else {
+              console.log(`File not found: ${file} (status: ${xhr.status})`);
+            }
+            
+            if (filesChecked === markerFiles.length) {
+              if (filesFound === markerFiles.length) {
+                updateStatus(`All marker files found (${filesFound}/${markerFiles.length})`);
+              } else {
+                updateStatus(`ERROR: Only ${filesFound}/${markerFiles.length} marker files found`);
+              }
+            }
+          };
+          xhr.onerror = function() {
+            filesChecked++;
+            console.log(`Error checking file: ${file}`);
+            
+            if (filesChecked === markerFiles.length) {
+              updateStatus(`ERROR: Only ${filesFound}/${markerFiles.length} marker files found`);
+            }
+          };
+          xhr.send();
+        });
+      }
+      
+      // Check marker files after a short delay
+      setTimeout(checkMarkerFiles, 1000);
+      
+      // Camera access events
+      sceneEl.addEventListener('camera-init', function() {
+        updateStatus('Camera initialized');
+      });
+      
+      sceneEl.addEventListener('camera-error', function(error) {
+        updateStatus('Camera error: ' + error);
+      });
+      
+      // NFT marker loading events
+      document.addEventListener('artoolkitNFTCreated', function() {
+        updateStatus('NFT marker loading started');
+        markerLoadingStarted = true;
+      });
+      
+      // When NFT marker is loaded
+      document.addEventListener('arjs-nft-loaded', function(event) {
+        updateStatus('NFT marker data loaded');
+        document.querySelector('.arjs-loader').style.display = 'none';
+      });
+      
+      // When marker is found
+      document.addEventListener('markerFound', function() {
+        updateStatus('Marker detected! ✓');
+      });
+      
+      // When marker is lost
+      document.addEventListener('markerLost', function() {
+        updateStatus('Marker lost. Please realign.');
+      });
+      
+      // Add a fallback check if marker loading doesn't start
+      setTimeout(function() {
+        if (!markerLoadingStarted) {
+          updateStatus('WARNING: Marker loading process did not start');
+        }
+      }, 3000);
+      
+      // Fallback to hide loader after timeout
+      setTimeout(() => {
+        const loader = document.querySelector('.arjs-loader');
+        if (loader && loader.style.display !== 'none') {
+          loader.style.display = 'none';
+          updateStatus('Timeout reached. Marker files may not be loading correctly. Check browser console for errors.');
+        }
+      }, 10000);
+    };
+  </script>
+</body>
