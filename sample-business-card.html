@@ -121,7 +121,7 @@
         vr-mode-ui="enabled: false;"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
         embedded
-        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960; displayWidth: 1280; displayHeight: 960;"
     >
         <!-- Demo using Hiro marker (easier to test) -->
         <a-marker preset="hiro" raycaster="objects: .clickable" emitevents="true" cursor="fuse: false; rayOrigin: mouse;">
@@ -298,7 +298,7 @@
         </a-marker>
 
         <!-- Camera -->
-        <a-entity camera></a-entity>
+        <a-entity camera="fov: 80; zoom: 1;"></a-entity>
     </a-scene>
 
     <script>
